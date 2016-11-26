@@ -76,7 +76,6 @@ def plot_images(images, cmap):
         x = images[i,:,:,:]
         if x.shape[2] == 1:
             x = x[:,:,0]
-        x = x * 255.0
         print "#{:d}".format(i)
         sys.stdout.flush()
         plt.imshow(x)

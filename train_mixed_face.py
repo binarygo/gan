@@ -10,25 +10,27 @@ ML_PATH = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 if ML_PATH not in sys.path:
     sys.path.append(ML_PATH)
 
-from data_mgr import anime_face_data_mgr
+from data_mgr import data_mgr_base
+from data_mgr import aflw_data_mgr
+from data_mgr import cat_face_data_mgr
 import gan_model_m8 as gan_m8
 import gan_model_m64 as gan_m64
 import gan_util
 
 
 BATCH_SIZE = 128
-IMAGE_WIDTH = 64
-IMAGE_HEIGHT = 64
+IMAGE_WIDTH = 28
+IMAGE_HEIGHT = 28
 IMAGE_DEPTH = 3
 Z_DEPTH = 100
 FORCE_GRAY_SCALE = False
-GAN_MODEL_CLASS = gan_m64.Model
-MODEL_DIR = "anime_face_train_log"
+GAN_MODEL_CLASS = gan_m8.Model
+MODEL_DIR = "mixed_face_train_log"
 LR_D = 0.0002
 LR_G = 0.0002
 INIT_STDDEV = 0.02
-TOTAL_NUM_STEPS = 50000
-DUMP_STEPS = 50
+TOTAL_NUM_STEPS = 100000
+DUMP_STEPS = 100
 
 
 def at_dump(step, zs, xs):
@@ -42,11 +44,19 @@ def at_dump(step, zs, xs):
 
 
 if __name__ == "__main__":
-    data_mgr = anime_face_data_mgr.DataMgr(
-        batch_size=BATCH_SIZE,
+    aflw_dm = aflw_data_mgr.DataMgr(
+        batch_size=int(np.ceil(BATCH_SIZE / 2.0)),
         image_width=IMAGE_WIDTH, image_height=IMAGE_HEIGHT,
         force_grayscale=FORCE_GRAY_SCALE)
 
+    cat_face_dm = cat_face_data_mgr.DataMgr(
+        batch_size=int(np.ceil(BATCH_SIZE / 2.0)),
+        image_width=IMAGE_WIDTH, image_height=IMAGE_HEIGHT,
+        force_grayscale=FORCE_GRAY_SCALE)
+
+    data_mgr = data_mgr_base.CompositeDataMgr(
+        batch_size=BATCH_SIZE, data_mgrs=[aflw_dm, cat_face_dm])
+    
     gan_util.train(
         data_mgr=data_mgr,
         gan_model_class=GAN_MODEL_CLASS,
