@@ -5,25 +5,28 @@ import numpy as np
 import tensorflow as tf
 import scipy.misc
 
-
 # Add ".." to system path
 ML_PATH = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 if ML_PATH not in sys.path:
     sys.path.append(ML_PATH)
 
-from data_mgr import mnist_data_mgr
+from data_mgr import data_mgr_base
+from data_mgr import aflw_data_mgr
 import gan_model_m28 as gan_m28
+import gan_model_m64 as gan_m64
 import gan_util
 
 
-DATA_DIR = "mnist_data"
 BATCH_SIZE = 128
-IMAGE_DEPTH = 1
+IMAGE_WIDTH = 28
+IMAGE_HEIGHT = 28
+IMAGE_DEPTH = 3
 Z_DEPTH = 100
+FORCE_GRAY_SCALE = False
 GAN_MODEL_CLASS = gan_m28.Model
-MODEL_DIR = "mnist_train_log"
-LR_D = 0.001
-LR_G = 0.001
+MODEL_DIR = "aflw_face_train_log"
+LR_D = 0.0002
+LR_G = 0.0002
 INIT_STDDEV = 0.02
 TOTAL_NUM_STEPS = 100000
 DUMP_STEPS = 100
@@ -40,8 +43,10 @@ def at_dump(step, zs, xs):
 
 
 if __name__ == "__main__":
-    data_mgr = mnist_data_mgr.DataMgr(
-        BATCH_SIZE, binarize=False, data_dir=DATA_DIR)
+    data_mgr = aflw_data_mgr.DataMgr(
+        batch_size=BATCH_SIZE,
+        image_width=IMAGE_WIDTH, image_height=IMAGE_HEIGHT,
+        force_grayscale=FORCE_GRAY_SCALE)
 
     gan_util.train(
         data_mgr=data_mgr,

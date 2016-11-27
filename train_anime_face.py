@@ -11,7 +11,7 @@ if ML_PATH not in sys.path:
     sys.path.append(ML_PATH)
 
 from data_mgr import anime_face_data_mgr
-import gan_model_m8 as gan_m8
+import gan_model_m28 as gan_m28
 import gan_model_m64 as gan_m64
 import gan_util
 
@@ -28,7 +28,7 @@ LR_D = 0.0002
 LR_G = 0.0002
 INIT_STDDEV = 0.02
 TOTAL_NUM_STEPS = 50000
-DUMP_STEPS = 50
+DUMP_STEPS = 100
 
 
 def at_dump(step, zs, xs):
