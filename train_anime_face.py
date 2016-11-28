@@ -25,7 +25,7 @@ Z_DEPTH = 100
 FORCE_GRAY_SCALE = False
 GAN_MODEL_FACTORY = partial(
     gan_m64.Model, image_depth=IMAGE_DEPTH, z_depth=Z_DEPTH)
-MODEL_DIR = "anime_face_train_log_1"
+MODEL_DIR = "anime_face_train_log"
 LR_D = 0.0002
 LR_G = 0.0002
 INIT_STDDEV = 0.02
