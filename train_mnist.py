@@ -1,5 +1,6 @@
 import os
 import sys
+from functools import partial
 
 import numpy as np
 import tensorflow as tf
@@ -20,7 +21,8 @@ DATA_DIR = "mnist_data"
 BATCH_SIZE = 128
 IMAGE_DEPTH = 1
 Z_DEPTH = 100
-GAN_MODEL_CLASS = gan_m28.Model
+GAN_MODEL_FACTORY = partial(
+    gan_m28.Model, image_depth=IMAGE_DEPTH, z_depth=Z_DEPTH)
 MODEL_DIR = "mnist_train_log"
 LR_D = 0.001
 LR_G = 0.001
@@ -41,15 +43,13 @@ def at_dump(step, zs, xs):
 
 if __name__ == "__main__":
     data_mgr = mnist_data_mgr.DataMgr(
-        BATCH_SIZE, binarize=False, data_dir=DATA_DIR)
+        batch_size=BATCH_SIZE, binarize=False, data_dir=DATA_DIR)
 
     gan_util.train(
         data_mgr=data_mgr,
-        gan_model_class=GAN_MODEL_CLASS,
+        gan_model_factory=GAN_MODEL_FACTORY,
         model_dir=MODEL_DIR,
         batch_size=BATCH_SIZE,
-        image_depth=IMAGE_DEPTH,
-        z_depth=Z_DEPTH,
         lr_D=LR_D,
         lr_G=LR_G,
         init_stddev=INIT_STDDEV,

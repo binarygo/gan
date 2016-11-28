@@ -6,14 +6,27 @@ import tensorflow as tf
 import nn_util
 
 
-class _Object(object):
-    pass
+class Discriminator(object):
 
+    def __init__(self, train_phase, input_images,
+                 image_height, image_width, image_depth):
+        input_images = tf.reshape(
+            input_images, [-1, image_height, image_width, image_depth])
+        logits = self._build_logits(train_phase, input_images)
+        loss_neg = tf.nn.relu(logits) + tf.log(1 + tf.exp(-tf.abs(logits)))
+        loss_pos = loss_neg - logits
 
-class DiscriminatorFactory(object):
-
-    def __init__(self):
-        pass
+        self._train_phase = train_phase
+        self._input_images = input_images
+        self._image_height = image_height
+        self._image_width = image_width
+        self._image_height = image_height
+        self._image_depth = image_depth
+        self._logits = logits
+        # loss as if input_images all have positive labels.
+        self._loss_pos = tf.reduce_mean(loss_pos)
+        # loss as if input_images all have negative labels.
+        self._loss_neg = tf.reduce_mean(loss_neg)
 
     def _build_logits(self, train_phase, input_images):
         x = input_images
@@ -21,36 +34,20 @@ class DiscriminatorFactory(object):
         x = nn_util.linear(x, 1, "fc_")
         return x
 
-    def build(self, train_phase, input_images):
-        logits = self._build_logits(train_phase, input_images)
-        loss_neg = tf.nn.relu(logits) + tf.log(1 + tf.exp(-tf.abs(logits)))
-        loss_pos = loss_neg - logits
 
-        m = _Object()
-        m._train_phase = train_phase
-        m._input_images = input_images
-        m._logits = logits
-        # loss as if input_images all have positive labels.
-        m._loss_pos = tf.reduce_mean(loss_pos)
-        # loss as if input_images all have negative labels.
-        m._loss_neg = tf.reduce_mean(loss_neg)
-        return m
+class Generator(object):
 
-
-class GeneratorFactory(object):
-
-    def __init__(self):
-        pass
-
-    def _build_images(self, train_phase, input_zs):
-        return input_zs
-    
-    def build(self, train_phase, input_zs):
+    def __init__(self, train_phase, input_zs, z_depth):
+        input_zs = tf.reshape(input_zs, [-1, 1, 1, z_depth])
         images = self._build_images(train_phase, input_zs)
 
-        m = _Object()
-        m._images = images
-        return m
+        self._train_phase = train_phase
+        self._input_zs = input_zs
+        self._z_depth = z_depth
+        self._images = images
+        
+    def _build_images(self, train_phase, input_zs):
+        return input_zs
 
 
 class Model(object):
@@ -67,13 +64,13 @@ class Model(object):
         params_tracker = nn_util.ParamsTracker()
         with tf.variable_scope("gan"):
             with tf.variable_scope("G"):
-                m_G = generator_factory.build(train_phase, input_zs)
+                m_G = generator_factory(train_phase, input_zs)
                 m_G_params = params_tracker.get_params()
             with tf.variable_scope("D"):
-                m_Ddata = discriminator_factory.build(train_phase, input_images)
+                m_Ddata = discriminator_factory(train_phase, input_images)
                 m_D_params = params_tracker.get_params()
                 tf.get_variable_scope().reuse_variables()
-                m_Dg = discriminator_factory.build(train_phase, m_G._images)
+                m_Dg = discriminator_factory(train_phase, m_G._images)
 
         batch_size_total = images_batch_size + zs_batch_size
         loss_D = (m_Ddata._loss_pos * images_batch_size +

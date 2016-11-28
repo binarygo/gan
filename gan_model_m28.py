@@ -10,15 +10,14 @@ import gan_model_image
 _IMAGE_SIZE = 28
 
 
-class DiscriminatorFactory(gan_model_image.DiscriminatorFactory):
+class Discriminator(gan_model_image.Discriminator):
 
-    def __init__(self, image_depth=1):
-        super(DiscriminatorFactory, self).__init__()
-        self._image_depth = image_depth
+    def __init__(self, train_phase, input_images, image_depth=1):
+        super(Discriminator, self).__init__(
+            train_phase, input_images, _IMAGE_SIZE, _IMAGE_SIZE, image_depth)
         
     def _build_logits(self, train_phase, input_images):
         x = input_images
-        x = tf.reshape(x, [-1, _IMAGE_SIZE, _IMAGE_SIZE, self._image_depth])
 
         # x = nn_util.batch_norm(train_phase, x, label="bn_input_")
         
@@ -39,16 +38,14 @@ class DiscriminatorFactory(gan_model_image.DiscriminatorFactory):
         return x
     
 
-class GeneratorFactory(gan_model_image.GeneratorFactory):
+class Generator(gan_model_image.Generator):
 
-    def __init__(self, z_depth=100, image_depth=1):
-        super(GeneratorFactory, self).__init__()
-        self._z_depth = z_depth
+    def __init__(self, train_phase, input_zs, z_depth=100, image_depth=1):
         self._image_depth = image_depth
+        super(Generator, self).__init__(train_phase, input_zs, z_depth)
         
     def _build_images(self, train_phase, input_zs):
         x = input_zs
-        x = tf.reshape(x, [-1, 1, 1, self._z_depth])
 
         x = nn_util.batch_norm(train_phase, x, label="bn_input_")
         
@@ -75,8 +72,12 @@ class Model(gan_model_image.Model):
 
     def __init__(self, images_batch_size, zs_batch_size,
                  image_depth=1, z_depth=100):
-        d_factory = DiscriminatorFactory(image_depth)
-        g_factory = GeneratorFactory(z_depth, image_depth)
+        def d_factory(train_phase, input_images):
+            return Discriminator(train_phase, input_images, image_depth)
+
+        def g_factory(train_phase, input_zs):
+            return Generator(train_phase, input_zs, z_depth, image_depth)
+
         super(Model, self).__init__(
             images_batch_size, zs_batch_size,
             _IMAGE_SIZE, _IMAGE_SIZE, image_depth, z_depth,

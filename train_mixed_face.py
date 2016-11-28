@@ -1,5 +1,6 @@
 import os
 import sys
+from functools import partial
 
 import numpy as np
 import tensorflow as tf
@@ -13,7 +14,7 @@ if ML_PATH not in sys.path:
 from data_mgr import data_mgr_base
 from data_mgr import aflw_data_mgr
 from data_mgr import cat_face_data_mgr
-import gan_model_m8 as gan_m8
+import gan_model_m28 as gan_m28
 import gan_model_m64 as gan_m64
 import gan_util
 
@@ -24,7 +25,8 @@ IMAGE_HEIGHT = 28
 IMAGE_DEPTH = 3
 Z_DEPTH = 100
 FORCE_GRAY_SCALE = False
-GAN_MODEL_CLASS = gan_m8.Model
+GAN_MODEL_FACTORY = partial(
+    gan_m28.Model, image_depth=IMAGE_DEPTH, z_depth=Z_DEPTH)
 MODEL_DIR = "mixed_face_train_log"
 LR_D = 0.0002
 LR_G = 0.0002
@@ -59,11 +61,9 @@ if __name__ == "__main__":
     
     gan_util.train(
         data_mgr=data_mgr,
-        gan_model_class=GAN_MODEL_CLASS,
+        gan_model_factory=GAN_MODEL_FACTORY,
         model_dir=MODEL_DIR,
         batch_size=BATCH_SIZE,
-        image_depth=IMAGE_DEPTH,
-        z_depth=Z_DEPTH,
         lr_D=LR_D,
         lr_G=LR_G,
         init_stddev=INIT_STDDEV,

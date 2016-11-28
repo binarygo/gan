@@ -6,8 +6,7 @@ import tensorflow as tf
 from matplotlib import pyplot as plt
 
 
-def gen_data(gan_model_class, model_path,
-             batch_size, image_depth, z_depth, zs):
+def gen_data(gan_model_factory, model_path, batch_size, zs):
     if zs is None:
         assert batch_size > 0
     elif batch_size is None:
@@ -17,19 +16,16 @@ def gen_data(gan_model_class, model_path,
     
     with tf.Graph().as_default():
         with tf.variable_scope("gan"):
-            m = gan_model_class(images_batch_size=batch_size,
-                                zs_batch_size=batch_size,
-                                image_depth=image_depth,
-                                z_depth=z_depth)
+            m = gan_model_factory(images_batch_size=batch_size,
+                                  zs_batch_size=batch_size)
 
         with tf.Session() as sess:
             m._saver.restore(sess, model_path)
             return m.run_generator(sess, zs)
 
 
-def train(data_mgr, gan_model_class, model_dir,
-          batch_size, image_depth, z_depth,
-          lr_D=0.0002, lr_G=0.0002, init_stddev=0.02,
+def train(data_mgr, gan_model_factory, model_dir,
+          batch_size, lr_D=0.0002, lr_G=0.0002, init_stddev=0.02,
           total_num_steps=100000, dump_steps=100,
           dump_callback=None):
     if not os.path.exists(model_dir):
@@ -41,10 +37,8 @@ def train(data_mgr, gan_model_class, model_dir,
         common_init=tf.truncated_normal_initializer(
             mean=0.0, stddev=init_stddev, dtype=tf.float32)
         with tf.variable_scope("gan", initializer=common_init):
-            m = gan_model_class(images_batch_size=batch_size,
-                                zs_batch_size=batch_size,
-                                image_depth=image_depth,
-                                z_depth=z_depth)
+            m = gan_model_factory(images_batch_size=batch_size,
+                                zs_batch_size=batch_size)
     
         with tf.Session() as sess:
             sess.run(tf.initialize_all_variables())
