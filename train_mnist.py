@@ -32,13 +32,7 @@ DUMP_STEPS = 100
 
 
 def at_dump(step, zs, xs):
-    for i in range(min(6, xs.shape[0])):
-        x = xs[i,:,:,:]
-        if x.shape[2] == 1:
-            x = x[:,:,0]
-        file_path = os.path.join(
-            MODEL_DIR, "step-{:d}-ex{:d}.png".format(step, i))
-        scipy.misc.toimage(x, cmin=0.0, cmax=1.0).save(file_path)
+    return gan_util.dump_images(step, zs, xs, 6, MODEL_DIR)
 
 
 if __name__ == "__main__":

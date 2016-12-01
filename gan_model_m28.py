@@ -19,10 +19,8 @@ class Discriminator(gan_model_image.Discriminator):
     def _build_logits(self, train_phase, input_images):
         x = input_images
 
-        # x = nn_util.batch_norm(train_phase, x, label="bn_input_")
-        
         x = nn_util.conv2d(x, 5, 32, 2, "SAME", label="conv1_")
-        x = nn_util.batch_norm(train_phase, x, label="bn_conv1_")
+        # x = nn_util.batch_norm(train_phase, x, label="bn_conv1_")
         x = nn_util.leaky_relu(x, alpha=0.2)
         
         x = nn_util.conv2d(x, 5, 64, 2, "SAME", label="conv2_")
@@ -34,6 +32,7 @@ class Discriminator(gan_model_image.Discriminator):
         x = nn_util.leaky_relu(x, alpha=0.2)
 
         x = nn_util.flatten(x)
+        # x = nn_util.dropout(train_phase, x, keep_prob=0.5)
         x = nn_util.linear(x, 1, "fc_")
         return x
     
@@ -47,8 +46,6 @@ class Generator(gan_model_image.Generator):
     def _build_images(self, train_phase, input_zs):
         x = input_zs
 
-        x = nn_util.batch_norm(train_phase, x, label="bn_input_")
-        
         x = nn_util.deconv2d(x, 3, 128, 1, "VALID", label="deconv1_")
         x = nn_util.batch_norm(train_phase, x, label="bn_deconv1_")
         x = tf.nn.relu(x)
@@ -64,7 +61,7 @@ class Generator(gan_model_image.Generator):
         x = nn_util.deconv2d(
             x, 5, self._image_depth, 2, "SAME", label="deconv4_")
         # x = nn_util.batch_norm(train_phase, x, label="bn_deconv4_")
-        x = tf.nn.sigmoid(x)
+        x = tf.nn.tanh(x)
         return x
 
 

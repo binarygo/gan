@@ -17,30 +17,24 @@ import gan_model_m64 as gan_m64
 import gan_util
 
 
-BATCH_SIZE = 128
-IMAGE_WIDTH = 64
-IMAGE_HEIGHT = 64
+BATCH_SIZE = 64
+IMAGE_WIDTH = 28
+IMAGE_HEIGHT = 28
 IMAGE_DEPTH = 3
 Z_DEPTH = 100
 FORCE_GRAY_SCALE = False
 GAN_MODEL_FACTORY = partial(
-    gan_m64.Model, image_depth=IMAGE_DEPTH, z_depth=Z_DEPTH)
+    gan_m28.Model, image_depth=IMAGE_DEPTH, z_depth=Z_DEPTH)
 MODEL_DIR = "anime_face_train_log"
 LR_D = 0.0002
 LR_G = 0.0002
 INIT_STDDEV = 0.02
-TOTAL_NUM_STEPS = 50000
+TOTAL_NUM_STEPS = 100000
 DUMP_STEPS = 100
 
 
 def at_dump(step, zs, xs):
-    for i in range(min(6, xs.shape[0])):
-        x = xs[i,:,:,:]
-        if x.shape[2] == 1:
-            x = x[:,:,0]
-        file_path = os.path.join(
-            MODEL_DIR, "step-{:d}-ex{:d}.png".format(step, i))
-        scipy.misc.toimage(x, cmin=0.0, cmax=1.0).save(file_path)
+    return gan_util.dump_images(step, zs, xs, 6, MODEL_DIR)
 
 
 if __name__ == "__main__":

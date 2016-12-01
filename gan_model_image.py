@@ -59,6 +59,8 @@ class Model(object):
         input_images = tf.placeholder(
             shape=[images_batch_size, image_height, image_width, image_depth],
             dtype=tf.float32)
+        # scale input images from [0, 1] to [-1, 1]
+        scaled_input_images = 2.0 * input_images - 1.0
         input_zs = tf.placeholder(shape=[zs_batch_size, z_depth],
                                   dtype=tf.float32)
         params_tracker = nn_util.ParamsTracker()
@@ -67,7 +69,8 @@ class Model(object):
                 m_G = generator_factory(train_phase, input_zs)
                 m_G_params = params_tracker.get_params()
             with tf.variable_scope("D"):
-                m_Ddata = discriminator_factory(train_phase, input_images)
+                m_Ddata = discriminator_factory(train_phase,
+                                                scaled_input_images)
                 m_D_params = params_tracker.get_params()
                 tf.get_variable_scope().reuse_variables()
                 m_Dg = discriminator_factory(train_phase, m_G._images)
@@ -112,7 +115,7 @@ class Model(object):
     def _feed_zs(self, zs):
         shape = self._input_zs.get_shape()
         if zs is None:
-            return np.random.uniform(0.0, 1.0, shape)
+            return np.random.uniform(-1.0, 1.0, shape)
         return np.reshape(zs, shape)
     
     def train_step_D(self, sess, images, zs, lr):
@@ -161,4 +164,5 @@ class Model(object):
             self._train_phase: False,
             self._input_zs: zs
         }
-        return zs, sess.run(self._m_G._images, feed_dict=feed_dict)
+        xs = sess.run(self._m_G._images, feed_dict=feed_dict)
+        return zs, (xs + 1.0) / 2.0

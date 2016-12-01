@@ -146,6 +146,11 @@ def batch_norm(train_phase, x, decay=0.99, center=True, scale=True, label=""):
     return tf.cond(train_phase, lambda: bn_train, lambda: bn_test)
 
 
+def dropout(train_phase, x, keep_prob):
+    return tf.cond(train_phase, lambda: tf.nn.dropout(x, keep_prob),
+                   lambda: x)
+
+
 class ParamsTracker(object):
 
     def __init__(self):

@@ -3,6 +3,7 @@ import sys
 
 import numpy as np
 import tensorflow as tf
+import scipy.misc
 from matplotlib import pyplot as plt
 
 
@@ -24,6 +25,16 @@ def gen_data(gan_model_factory, model_path, batch_size, zs):
             return m.run_generator(sess, zs)
 
 
+def dump_images(step, zs, xs, max_num_images, dest_dir):
+    for i in range(min(max_num_images, xs.shape[0])):
+        x = xs[i,:,:,:]
+        if x.shape[2] == 1:
+            x = x[:,:,0]
+        file_path = os.path.join(
+            dest_dir, "step-{:d}-ex{:d}.png".format(step, i))
+        scipy.misc.toimage(x, cmin=0.0, cmax=1.0).save(file_path)
+
+
 def train(data_mgr, gan_model_factory, model_dir,
           batch_size, lr_D=0.0002, lr_G=0.0002, init_stddev=0.02,
           total_num_steps=100000, dump_steps=100,
@@ -38,7 +49,7 @@ def train(data_mgr, gan_model_factory, model_dir,
             mean=0.0, stddev=init_stddev, dtype=tf.float32)
         with tf.variable_scope("gan", initializer=common_init):
             m = gan_model_factory(images_batch_size=batch_size,
-                                zs_batch_size=batch_size)
+                                  zs_batch_size=batch_size)
     
         with tf.Session() as sess:
             sess.run(tf.initialize_all_variables())
