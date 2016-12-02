@@ -21,7 +21,7 @@ def gen_data(gan_model_factory, model_path, batch_size, zs):
                                   zs_batch_size=batch_size)
 
         with tf.Session() as sess:
-            m._saver.restore(sess, model_path)
+            m.restore(sess, model_path)
             return m.run_generator(sess, zs)
 
 
@@ -39,8 +39,11 @@ def train(data_mgr, gan_model_factory, model_dir,
           batch_size, lr_D=0.0002, lr_G=0.0002, init_stddev=0.02,
           total_num_steps=100000, dump_steps=100,
           dump_callback=None):
+    ckpt = None
     if not os.path.exists(model_dir):
         os.makedirs(model_dir)
+    else:
+        ckpt = tf.train.get_checkpoint_state(model_dir)
     
     valid_data = data_mgr.valid_batch()
 
@@ -52,8 +55,12 @@ def train(data_mgr, gan_model_factory, model_dir,
                                   zs_batch_size=batch_size)
     
         with tf.Session() as sess:
-            sess.run(tf.initialize_all_variables())
+            if ckpt is None:
+                sess.run(tf.initialize_all_variables())
+            else:
+                m.restore(sess, ckpt.model_checkpoint_path)
             for i in range(total_num_steps + 1):
+                step, _ = m.global_step(sess), m.inc_global_step(sess)
                 for step_D in range(1):
                     train_data = data_mgr.train_batch()
                     train_loss_D = m.train_step_D(sess, train_data, None, lr_D)
@@ -61,20 +68,19 @@ def train(data_mgr, gan_model_factory, model_dir,
                     train_loss_G = m.train_step_G(sess, None, lr_G)
                 valid_loss_D = m.test_step_D(sess, valid_data, None)
                 valid_loss_G = m.test_step_G(sess, None)
-                if i % dump_steps == 0:
-                    m.save(sess, model_dir, i)
+                if step % dump_steps == 0:
+                    m.save(sess, model_dir)
                     print ("step = {:d}\n"
                            "train_loss_D = {:.6f}, "
                            "train_loss_G = {:.6f}\n"
                            "valid_loss_D = {:.6f}, "
                            "valid_loss_G = {:.6f}").format(
-                               i, train_loss_D, train_loss_G,
+                               step, train_loss_D, train_loss_G,
                                valid_loss_D, valid_loss_G)
                     print "=" * 60
                     sys.stdout.flush()
                     if dump_callback is not None:
-                        dump_callback(i, *m.run_generator(sess, None))
-
+                        dump_callback(step, *m.run_generator(sess, None))
 
 def plot_images(images, cmap):
     for i in range(images.shape[0]):

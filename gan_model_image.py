@@ -55,6 +55,8 @@ class Model(object):
     def __init__(self, images_batch_size, zs_batch_size,
                  image_height, image_width, image_depth, z_depth,
                  discriminator_factory, generator_factory):
+        global_step = tf.Variable(0, trainable=False)
+        inc_global_step = tf.assign(global_step, global_step + 1)
         train_phase = tf.placeholder(shape=[], dtype=tf.bool)
         input_images = tf.placeholder(
             shape=[images_batch_size, image_height, image_width, image_depth],
@@ -94,6 +96,8 @@ class Model(object):
         self._image_width = image_width
         self._image_depth = image_depth
         self._z_depth = z_depth
+        self._global_step = global_step
+        self._inc_global_step = inc_global_step
         self._train_phase = train_phase
         self._input_images = input_images
         self._input_zs = input_zs
@@ -153,11 +157,20 @@ class Model(object):
             self._input_zs: self._feed_zs(zs)
         }
         return sess.run(self._loss_G, feed_dict=feed_dict)
+
+    def global_step(self, sess):
+        return sess.run(self._global_step)
     
-    def save(self, sess, model_dir, global_step):
+    def inc_global_step(self, sess):
+        return sess.run(self._inc_global_step)
+    
+    def save(self, sess, model_dir):
         self._saver.save(sess, os.path.join(model_dir, "sav"),
-                         global_step=global_step)
-    
+                         global_step=self._global_step)
+
+    def restore(self, sess, model_path):
+        self._saver.restore(sess, model_path)
+        
     def run_generator(self, sess, zs):
         zs = self._feed_zs(zs)
         feed_dict = {
