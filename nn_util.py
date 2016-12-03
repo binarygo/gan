@@ -133,7 +133,7 @@ def leaky_relu(x, alpha=0.01):
     return pos_x - neg_x * alpha
 
 
-def batch_norm(train_phase, x, decay=0.99, center=True, scale=True, label=""):
+def batch_norm(train_phase, x, decay=0.9, center=True, scale=True, label=""):
     with tf.variable_scope(label + "bn") as scope:
         bn_train = tf_layers.batch_norm(
             x, decay=decay, center=center, scale=scale,
@@ -149,6 +149,24 @@ def batch_norm(train_phase, x, decay=0.99, center=True, scale=True, label=""):
 def dropout(train_phase, x, keep_prob):
     return tf.cond(train_phase, lambda: tf.nn.dropout(x, keep_prob),
                    lambda: x)
+
+
+def make_pos_neg_targets(num_pos, num_neg):
+    values = []
+    if num_pos > 0:
+        values.append(tf.ones(shape=[num_pos, 1], dtype=tf.float32))
+    if num_neg > 0:
+        values.append(tf.zeros(shape=[num_neg, 1], dtype=tf.float32))
+    return tf.concat(0, values)
+
+
+def make_neg_pos_targets(num_neg, num_pos):
+    values = []
+    if num_neg > 0:
+        values.append(tf.zeros(shape=[num_neg, 1], dtype=tf.float32))
+    if num_pos > 0:
+        values.append(tf.ones(shape=[num_pos, 1], dtype=tf.float32))
+    return tf.concat(0, values)
 
 
 class ParamsTracker(object):

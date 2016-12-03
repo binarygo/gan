@@ -8,25 +8,23 @@ import nn_util
 
 class Discriminator(object):
 
-    def __init__(self, train_phase, input_images,
+    def __init__(self, train_phase, targets, input_images,
                  image_height, image_width, image_depth):
+        targets = tf.reshape(targets, [-1, 1])
         input_images = tf.reshape(
             input_images, [-1, image_height, image_width, image_depth])
         logits = self._build_logits(train_phase, input_images)
-        loss_neg = tf.nn.relu(logits) + tf.log(1 + tf.exp(-tf.abs(logits)))
-        loss_pos = loss_neg - logits
+        loss = tf.nn.sigmoid_cross_entropy_with_logits(logits, targets)
+        loss = tf.reduce_mean(loss)
 
         self._train_phase = train_phase
+        self._targets = targets
         self._input_images = input_images
         self._image_height = image_height
         self._image_width = image_width
-        self._image_height = image_height
         self._image_depth = image_depth
         self._logits = logits
-        # loss as if input_images all have positive labels.
-        self._loss_pos = tf.reduce_mean(loss_pos)
-        # loss as if input_images all have negative labels.
-        self._loss_neg = tf.reduce_mean(loss_neg)
+        self._loss = loss
 
     def _build_logits(self, train_phase, input_images):
         x = input_images
@@ -65,23 +63,35 @@ class Model(object):
         scaled_input_images = 2.0 * input_images - 1.0
         input_zs = tf.placeholder(shape=[zs_batch_size, z_depth],
                                   dtype=tf.float32)
+
         params_tracker = nn_util.ParamsTracker()
         with tf.variable_scope("gan"):
+            t_false = tf.constant(False)
             with tf.variable_scope("G"):
                 m_G = generator_factory(train_phase, input_zs)
+                tf.get_variable_scope().reuse_variables()
+                m_Gtest = generator_factory(t_false, input_zs)
                 m_G_params = params_tracker.get_params()
             with tf.variable_scope("D"):
-                m_Ddata = discriminator_factory(train_phase,
-                                                scaled_input_images)
-                m_D_params = params_tracker.get_params()
+                m_Ddata = discriminator_factory(
+                    train_phase,
+                    nn_util.make_pos_neg_targets(images_batch_size, 0),
+                    scaled_input_images)
                 tf.get_variable_scope().reuse_variables()
-                m_Dg = discriminator_factory(train_phase, m_G._images)
+                m_Dg_neg = discriminator_factory(
+                    train_phase,
+                    nn_util.make_pos_neg_targets(0, zs_batch_size),
+                    m_G._images)
+                m_Dg_pos = discriminator_factory(
+                    train_phase,
+                    nn_util.make_pos_neg_targets(zs_batch_size, 0),
+                    m_G._images)
+                m_D_params = params_tracker.get_params()
 
-        batch_size_total = images_batch_size + zs_batch_size
-        loss_D = (m_Ddata._loss_pos * images_batch_size +
-                  m_Dg._loss_neg * zs_batch_size) / float(batch_size_total)
-        #loss_G = m_Dg._loss_pos
-        loss_G = -tf.reduce_mean(m_Dg._logits)
+        total_batch_size = images_batch_size + zs_batch_size
+        loss_D = (m_Ddata._loss * images_batch_size +
+                  m_Dg_neg._loss * zs_batch_size) / float(total_batch_size)
+        loss_G = m_Dg_pos._loss
 
         lr = tf.placeholder(shape=[], dtype=tf.float32)
         optimizer = tf.train.AdamOptimizer(lr, beta1=0.5)
@@ -101,9 +111,8 @@ class Model(object):
         self._train_phase = train_phase
         self._input_images = input_images
         self._input_zs = input_zs
-        self._m_Ddata = m_Ddata
-        self._m_Dg = m_Dg
         self._m_G = m_G
+        self._m_Gtest = m_Gtest
         self._m_D_params = m_D_params
         self._m_G_params = m_G_params
         self._loss_D = loss_D
@@ -177,5 +186,5 @@ class Model(object):
             self._train_phase: False,
             self._input_zs: zs
         }
-        xs = sess.run(self._m_G._images, feed_dict=feed_dict)
+        xs = sess.run(self._m_Gtest._images, feed_dict=feed_dict)
         return zs, (xs + 1.0) / 2.0

@@ -12,15 +12,17 @@ _IMAGE_SIZE = 28
 
 class Discriminator(gan_model_image.Discriminator):
 
-    def __init__(self, train_phase, input_images, image_depth=1):
+    def __init__(self, train_phase, targets, input_images, image_depth=1):
         super(Discriminator, self).__init__(
-            train_phase, input_images, _IMAGE_SIZE, _IMAGE_SIZE, image_depth)
+            train_phase, targets, input_images,
+            _IMAGE_SIZE, _IMAGE_SIZE, image_depth)
         
     def _build_logits(self, train_phase, input_images):
         x = input_images
-
+        x = nn_util.batch_norm(train_phase, x, label="bn_input_")
+        
         x = nn_util.conv2d(x, 5, 32, 2, "SAME", label="conv1_")
-        # x = nn_util.batch_norm(train_phase, x, label="bn_conv1_")
+        x = nn_util.batch_norm(train_phase, x, label="bn_conv1_")
         x = nn_util.leaky_relu(x, alpha=0.2)
         
         x = nn_util.conv2d(x, 5, 64, 2, "SAME", label="conv2_")
@@ -69,8 +71,9 @@ class Model(gan_model_image.Model):
 
     def __init__(self, images_batch_size, zs_batch_size,
                  image_depth=1, z_depth=100):
-        def d_factory(train_phase, input_images):
-            return Discriminator(train_phase, input_images, image_depth)
+        def d_factory(train_phase, targets, input_images):
+            return Discriminator(
+                train_phase, targets, input_images, image_depth)
 
         def g_factory(train_phase, input_zs):
             return Generator(train_phase, input_zs, z_depth, image_depth)

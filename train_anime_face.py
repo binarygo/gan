@@ -18,13 +18,13 @@ import gan_util
 
 
 BATCH_SIZE = 64
-IMAGE_WIDTH = 28
-IMAGE_HEIGHT = 28
+IMAGE_WIDTH = 64
+IMAGE_HEIGHT = 64
 IMAGE_DEPTH = 3
 Z_DEPTH = 100
 FORCE_GRAY_SCALE = False
 GAN_MODEL_FACTORY = partial(
-    gan_m28.Model, image_depth=IMAGE_DEPTH, z_depth=Z_DEPTH)
+    gan_m64.Model, image_depth=IMAGE_DEPTH, z_depth=Z_DEPTH)
 MODEL_DIR = "anime_face_train_log"
 LR_D = 0.0002
 LR_G = 0.0002

@@ -12,9 +12,10 @@ _IMAGE_SIZE = 64
 
 class Discriminator(gan_model_image.Discriminator):
 
-    def __init__(self, train_phase, input_images, image_depth=3):
+    def __init__(self, train_phase, targets, input_images, image_depth=3):
         super(Discriminator, self).__init__(
-            train_phase, input_images, _IMAGE_SIZE, _IMAGE_SIZE, image_depth)
+            train_phase, targets, input_images,
+            _IMAGE_SIZE, _IMAGE_SIZE, image_depth)
 
     def _build_logits(self, train_phase, input_images):
         x = input_images
@@ -77,8 +78,9 @@ class Model(gan_model_image.Model):
 
     def __init__(self, images_batch_size, zs_batch_size,
                  image_depth=3, z_depth=100):
-        def d_factory(train_phase, input_images):
-            return Discriminator(train_phase, input_images, image_depth)
+        def d_factory(train_phase, targets, input_images):
+            return Discriminator(
+                train_phase, targets, input_images, image_depth)
 
         def g_factory(train_phase, input_zs):
             return Generator(train_phase, input_zs, z_depth, image_depth)
